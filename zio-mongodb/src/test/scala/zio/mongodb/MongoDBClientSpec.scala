@@ -16,10 +16,22 @@
 
 package zio.mongodb
 
-trait MongoDB {
-  val mongoDB: MongoDB.Service[Any]
-}
+import org.scalatest._
+import zio.DefaultRuntime
 
-object MongoDB {
-  trait Service[R] {}
+class MongoDBClientSpec extends FunSuite with Matchers with MongoEmbedDatabase {
+
+  implicit val dbPort: Int = 22000
+
+  val runtime = new DefaultRuntime {}
+
+  test("client activities") {
+
+    withEmbedMongoFixture(dbPort) { mongodProps =>
+      val client = MongoDBClient(s"mongodb://localhost:$dbPort")
+      val names = runtime.unsafeRun(client.listDatabaseNamesAsList)
+      names.length should be(3L)
+      names should be(List("admin", "config", "local"))
+    }
+  }
 }
